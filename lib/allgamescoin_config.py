@@ -34,7 +34,7 @@ class AllGamesCoinConfig():
         creds = {key: value for (key, value) in match}
 
         # standard AllGamesCoin defaults...
-        default_port = 9998 if (network == 'mainnet') else 19998
+        default_port = 7207 if (network == 'mainnet') else 17207
 
         # use default port for network if not specified in allgamescoin.conf
         if not ('port' in creds):

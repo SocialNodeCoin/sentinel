@@ -2,11 +2,9 @@
 
 An all-powerful toolset for AllGamesCoin.
 
-[![Build Status](https://travis-ci.org/allgamescoinpay/sentinel.svg?branch=master)](https://travis-ci.org/allgamescoinpay/sentinel)
+Sentinel is an autonomous agent for persisting, processing and automating AllGamesCoin governance objects and tasks, and for expanded functions in the upcoming AllGamesCoin V0.2.x release (Evolution).
 
-Sentinel is an autonomous agent for persisting, processing and automating AllGamesCoin governance objects and tasks, and for expanded functions in the upcoming AllGamesCoin V13 release (Evolution).
-
-Sentinel is implemented as a Python application that binds to a local version 12 allgamescoind instance on each AllGamesCoin Masternode.
+Sentinel is implemented as a Python application that binds to a local version 0.2.x allgamescoind instance on each AllGamesCoin Masternode.
 
 This guide covers installing Sentinel onto an existing Masternode in Ubuntu 14.04 / 16.04.
 
@@ -23,7 +21,7 @@ Update system packages and ensure virtualenv is installed:
     $ sudo apt-get update
     $ sudo apt-get -y install python-virtualenv
 
-Make sure the local AllGamesCoin daemon running is at least version 12.1 (120100)
+Make sure the local AllGamesCoin daemon running is at least version 0.2.0 (20000)
 
     $ allgamescoin-cli getinfo | grep version
 
@@ -31,7 +29,7 @@ Make sure the local AllGamesCoin daemon running is at least version 12.1 (120100
 
 Clone the Sentinel repo and install Python dependencies.
 
-    $ git clone https://github.com/allgamescoinpay/sentinel.git && cd sentinel
+    $ git clone https://github.com/allgamescoindev/sentinel.git && cd sentinel
     $ virtualenv ./venv
     $ ./venv/bin/pip install -r requirements.txt
 
@@ -64,24 +62,6 @@ An alternative (non-default) path to the `allgamescoin.conf` file can be specifi
 To view debug output, set the `SENTINEL_DEBUG` environment variable to anything non-zero, then run the script manually:
 
     $ SENTINEL_DEBUG=1 ./venv/bin/python bin/sentinel.py
-
-## Contributing
-
-Please follow the [AllGamesCoinCore guidelines for contributing](https://github.com/allgamescoinpay/allgamescoin/blob/master/CONTRIBUTING.md).
-
-Specifically:
-
-* [Contributor Workflow](https://github.com/allgamescoinpay/allgamescoin/blob/master/CONTRIBUTING.md#contributor-workflow)
-
-    To contribute a patch, the workflow is as follows:
-
-    * Fork repository
-    * Create topic branch
-    * Commit patches
-
-    In general commits should be atomic and diffs should be easy to read. For this reason do not mix any formatting fixes or code moves with actual code changes.
-
-    Commit messages should be verbose by default, consisting of a short subject line (50 chars max), a blank line and detailed explanatory text as separate paragraph(s); unless the title alone is self-explanatory (like "Corrected typo in main.cpp") then a single title line is sufficient. Commit messages should be helpful to people reading your code in the future, so explain the reasoning for your decisions. Further explanation [here](http://chris.beams.io/posts/git-commit/).
 
 ### License
 
