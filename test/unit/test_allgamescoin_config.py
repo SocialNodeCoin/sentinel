@@ -6,13 +6,13 @@ os.environ['SENTINEL_CONFIG'] = os.path.normpath(os.path.join(os.path.dirname(__
 os.environ['SENTINEL_ENV'] = 'test'
 sys.path.append(os.path.normpath(os.path.join(os.path.dirname(__file__), '../../lib')))
 import config
-from dash_config import DashConfig
+from allgamescoin_config import AllGamesCoinConfig
 
 
 @pytest.fixture
-def dash_conf(**kwargs):
+def allgamescoin_conf(**kwargs):
     defaults = {
-        'rpcuser': 'dashrpc',
+        'rpcuser': 'allgamescoinrpc',
         'rpcpassword': 'EwJeV3fZTyTVozdECF627BkBMnNDwQaVLakG3A4wXYyk',
         'rpcport': 29241,
     }
@@ -34,35 +34,35 @@ rpcport={rpcport}
 
 
 def test_get_rpc_creds():
-    dash_config = dash_conf()
-    creds = DashConfig.get_rpc_creds(dash_config, 'testnet')
+    allgamescoin_config = allgamescoin_conf()
+    creds = AllGamesCoinConfig.get_rpc_creds(allgamescoin_config, 'testnet')
 
     for key in ('user', 'password', 'port'):
         assert key in creds
-    assert creds.get('user') == 'dashrpc'
+    assert creds.get('user') == 'allgamescoinrpc'
     assert creds.get('password') == 'EwJeV3fZTyTVozdECF627BkBMnNDwQaVLakG3A4wXYyk'
     assert creds.get('port') == 29241
 
-    dash_config = dash_conf(rpcpassword='s00pers33kr1t', rpcport=8000)
-    creds = DashConfig.get_rpc_creds(dash_config, 'testnet')
+    allgamescoin_config = allgamescoin_conf(rpcpassword='s00pers33kr1t', rpcport=8000)
+    creds = AllGamesCoinConfig.get_rpc_creds(allgamescoin_config, 'testnet')
 
     for key in ('user', 'password', 'port'):
         assert key in creds
-    assert creds.get('user') == 'dashrpc'
+    assert creds.get('user') == 'allgamescoinrpc'
     assert creds.get('password') == 's00pers33kr1t'
     assert creds.get('port') == 8000
 
-    no_port_specified = re.sub('\nrpcport=.*?\n', '\n', dash_conf(), re.M)
-    creds = DashConfig.get_rpc_creds(no_port_specified, 'testnet')
+    no_port_specified = re.sub('\nrpcport=.*?\n', '\n', allgamescoin_conf(), re.M)
+    creds = AllGamesCoinConfig.get_rpc_creds(no_port_specified, 'testnet')
 
     for key in ('user', 'password', 'port'):
         assert key in creds
-    assert creds.get('user') == 'dashrpc'
+    assert creds.get('user') == 'allgamescoinrpc'
     assert creds.get('password') == 'EwJeV3fZTyTVozdECF627BkBMnNDwQaVLakG3A4wXYyk'
     assert creds.get('port') == 19998
 
 
-# ensure dash network (mainnet, testnet) matches that specified in config
-# requires running dashd on whatever port specified...
+# ensure allgamescoin network (mainnet, testnet) matches that specified in config
+# requires running allgamescoind on whatever port specified...
 #
-# This is more of a dashd/jsonrpc test than a config test...
+# This is more of a allgamescoind/jsonrpc test than a config test...

@@ -1,9 +1,9 @@
 #!/bin/bash
 set -evx
 
-mkdir ~/.dashcore
+mkdir ~/.allgamescoincore
 
 # safety check
-if [ ! -f ~/.dashcore/.dash.conf ]; then
-  cp share/dash.conf.example ~/.dashcore/dash.conf
+if [ ! -f ~/.allgamescoincore/.allgamescoin.conf ]; then
+  cp share/allgamescoin.conf.example ~/.allgamescoincore/allgamescoin.conf
 fi
