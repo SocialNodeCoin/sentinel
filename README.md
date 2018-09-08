@@ -8,9 +8,9 @@ Sentinel is implemented as a Python application that binds to a local version 0.
 
 This guide covers installing Sentinel onto an existing Masternode in Ubuntu 14.04 / 16.04.
 
-## Installation
+## 1. Installation - Linux
 
-### 1. Install Prerequisites
+### 1.1. Install Prerequisites
 
 Make sure Python version 2.7.x or above is installed:
 
@@ -25,7 +25,7 @@ Make sure the local AllGamesCoin daemon running is at least version 0.2.0 (20000
 
     $ allgamescoin-cli getinfo | grep version
 
-### 2. Install Sentinel
+### 1.2. Install Sentinel
 
 Clone the Sentinel repo and install Python dependencies.
 
@@ -33,7 +33,7 @@ Clone the Sentinel repo and install Python dependencies.
     $ virtualenv ./venv
     $ ./venv/bin/pip install -r requirements.txt
 
-### 3. Set up Cron
+### 1.3. Set up Cron
 
 Set up a crontab entry to call Sentinel every minute:
 
@@ -43,13 +43,33 @@ In the crontab editor, add the lines below, replacing '/home/YOURUSERNAME/sentin
 
     * * * * * cd /home/YOURUSERNAME/sentinel && ./venv/bin/python bin/sentinel.py >/dev/null 2>&1
 
-### 4. Test the Configuration
+### 1.4. Test the Configuration
 
 Test the config by running all tests from the sentinel folder you cloned into
 
     $ ./venv/bin/py.test ./test
 
 With all tests passing and crontab setup, Sentinel will stay in sync with allgamescoind and the installation is complete
+
+## Installation - Windows
+
+### 1.1. Install Prerequisites
+
+Download and install Python 2.7 https://www.python.org/
+
+Open CMD
+
+pip install pyinstaller
+
+### 1.2. build
+
+Download https://github.com/allgamescoindev/sentinel.git
+
+Go to the unzipped folder
+
+pip install -r requirements.txt
+
+pyinstaller --onefile --paths=lib/ ./bin/sentinel.py
 
 ## Configuration
 
