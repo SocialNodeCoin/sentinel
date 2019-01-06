@@ -8,12 +8,12 @@ sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..', 'lib'))
 sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..'))
 import config
 
-from allgamescoind import AllGamesCoinDaemon
-from allgamescoin_config import AllGamesCoinConfig
+from decentralwayd import decentralwaydaemon
+from decentralway_config import decentralwayConfig
 
 
-def test_allgamescoind():
-    config_text = AllGamesCoinConfig.slurp_config_file(config.allgamescoin_conf)
+def test_decentralwayd():
+    config_text = decentralwayConfig.slurp_config_file(config.decentralway_conf)
     network = 'mainnet'
     is_testnet = False
     genesis_hash = u'0000043c6374e2da57aca089e7a5110f7848349c44a4522c3066ba1abf126633'
@@ -23,15 +23,15 @@ def test_allgamescoind():
             is_testnet = True
             genesis_hash = u'00000bafbc94add76cb75e2ec92894837288a481e5c005f6563d91623bf8bc2c'
 
-    creds = AllGamesCoinConfig.get_rpc_creds(config_text, network)
-    allgamescoind = AllGamesCoinDaemon(**creds)
-    assert allgamescoind.rpc_command is not None
+    creds = decentralwayConfig.get_rpc_creds(config_text, network)
+    decentralwayd = decentralwaydaemon(**creds)
+    assert decentralwayd.rpc_command is not None
 
-    assert hasattr(allgamescoind, 'rpc_connection')
+    assert hasattr(decentralwayd, 'rpc_connection')
 
-    # AllGamesCoin testnet block 0 hash == 00000bafbc94add76cb75e2ec92894837288a481e5c005f6563d91623bf8bc2c
+    # decentralway testnet block 0 hash == 00000bafbc94add76cb75e2ec92894837288a481e5c005f6563d91623bf8bc2c
     # test commands without arguments
-    info = allgamescoind.rpc_command('getinfo')
+    info = decentralwayd.rpc_command('getinfo')
     info_keys = [
         'blocks',
         'connections',
@@ -48,4 +48,4 @@ def test_allgamescoind():
     assert info['testnet'] is is_testnet
 
     # test commands with args
-    assert allgamescoind.rpc_command('getblockhash', 0) == genesis_hash
+    assert decentralwayd.rpc_command('getblockhash', 0) == genesis_hash
