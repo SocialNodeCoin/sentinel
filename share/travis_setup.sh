@@ -1,9 +1,9 @@
 #!/bin/bash
 set -evx
 
-mkdir ~/.allgamescoincore
+mkdir ~/.decentralwaycore
 
 # safety check
-if [ ! -f ~/.allgamescoincore/.allgamescoin.conf ]; then
-  cp share/allgamescoin.conf.example ~/.allgamescoincore/allgamescoin.conf
+if [ ! -f ~/.decentralwaycore/.decentralway.conf ]; then
+  cp share/decentralway.conf.example ~/.decentralwaycore/decentralway.conf
 fi
