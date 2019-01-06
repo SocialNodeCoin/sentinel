@@ -19,24 +19,24 @@ class GovernanceClass(object):
         return self.governance_object
 
     # pass thru to GovernanceObject#vote
-    def vote(self, allgamescoind, signal, outcome):
-        return self.go.vote(allgamescoind, signal, outcome)
+    def vote(self, decentralwayd, signal, outcome):
+        return self.go.vote(decentralwayd, signal, outcome)
 
     # pass thru to GovernanceObject#voted_on
     def voted_on(self, **kwargs):
         return self.go.voted_on(**kwargs)
 
-    def vote_validity(self, allgamescoind):
+    def vote_validity(self, decentralwayd):
         if self.is_valid():
             printdbg("Voting valid! %s: %d" % (self.__class__.__name__, self.id))
-            self.vote(allgamescoind, models.VoteSignals.valid, models.VoteOutcomes.yes)
+            self.vote(decentralwayd, models.VoteSignals.valid, models.VoteOutcomes.yes)
         else:
             printdbg("Voting INVALID! %s: %d" % (self.__class__.__name__, self.id))
-            self.vote(allgamescoind, models.VoteSignals.valid, models.VoteOutcomes.no)
+            self.vote(decentralwayd, models.VoteSignals.valid, models.VoteOutcomes.no)
 
     def get_submit_command(self):
-        import allgamescoinlib
-        obj_data = allgamescoinlib.SHIM_serialise_for_allgamescoind(self.serialise())
+        import decentralwaylib
+        obj_data = decentralwaylib.SHIM_serialise_for_decentralwayd(self.serialise())
 
         # new objects won't have parent_hash, revision, etc...
         cmd = ['gobject', 'submit', '0', '1', str(int(time.time())), obj_data]
@@ -47,15 +47,15 @@ class GovernanceClass(object):
 
         return cmd
 
-    def submit(self, allgamescoind):
+    def submit(self, decentralwayd):
         # don't attempt to submit a superblock unless a masternode
         # note: will probably re-factor this, this has code smell
-        if (self.only_masternode_can_submit and not allgamescoind.is_masternode()):
+        if (self.only_masternode_can_submit and not decentralwayd.is_masternode()):
             print("Not a masternode. Only masternodes may submit these objects")
             return
 
         try:
-            object_hash = allgamescoind.rpc_command(*self.get_submit_command())
+            object_hash = decentralwayd.rpc_command(*self.get_submit_command())
             printdbg("Submitted: [%s]" % object_hash)
         except JSONRPCException as e:
             print("Unable to submit: %s" % e.message)
@@ -66,9 +66,9 @@ class GovernanceClass(object):
 
         return binascii.hexlify(simplejson.dumps(self.get_dict(), sort_keys=True).encode('utf-8')).decode('utf-8')
 
-    def allgamescoind_serialise(self):
-        import allgamescoinlib
-        return allgamescoinlib.SHIM_serialise_for_allgamescoind(self.serialise())
+    def decentralwayd_serialise(self):
+        import decentralwaylib
+        return decentralwaylib.SHIM_serialise_for_decentralwayd(self.serialise())
 
     @classmethod
     def serialisable_fields(self):

@@ -3,30 +3,30 @@
 """
 import sys
 import os
-from allgamescoin_config import AllGamesCoinConfig
+from decentralway_config import decentralwayConfig
 
 default_sentinel_config = os.path.normpath(
     os.path.join(os.path.dirname(__file__), '../sentinel.conf')
 )
 sentinel_config_file = os.environ.get('SENTINEL_CONFIG', default_sentinel_config)
-sentinel_cfg = AllGamesCoinConfig.tokenize(sentinel_config_file)
+sentinel_cfg = decentralwayConfig.tokenize(sentinel_config_file)
 sentinel_version = "1.2.0"
-min_allgamescoind_proto_version_with_sentinel_ping = 70207
+min_decentralwayd_proto_version_with_sentinel_ping = 70207
 
 
-def get_allgamescoin_conf():
+def get_decentralway_conf():
     if sys.platform == 'win32':
-        allgamescoin_conf = os.path.join(os.getenv('APPDATA'), "AllGamesCoinCore/allgamescoin.conf")
+        decentralway_conf = os.path.join(os.getenv('APPDATA'), "decentralwayCore/decentralway.conf")
     else:
         home = os.environ.get('HOME')
 
-        allgamescoin_conf = os.path.join(home, ".allgamescoincore/allgamescoin.conf")
+        decentralway_conf = os.path.join(home, ".decentralwaycore/decentralway.conf")
         if sys.platform == 'darwin':
-            allgamescoin_conf = os.path.join(home, "Library/Application Support/AllGamesCoinCore/allgamescoin.conf")
+            decentralway_conf = os.path.join(home, "Library/Application Support/decentralwayCore/decentralway.conf")
 
-    allgamescoin_conf = sentinel_cfg.get('allgamescoin_conf', allgamescoin_conf)
+    decentralway_conf = sentinel_cfg.get('decentralway_conf', decentralway_conf)
 
-    return allgamescoin_conf
+    return decentralway_conf
 
 
 def get_network():
@@ -86,7 +86,7 @@ def get_db_conn():
     return db
 
 
-allgamescoin_conf = get_allgamescoin_conf()
+decentralway_conf = get_decentralway_conf()
 network = get_network()
 rpc_host = get_rpchost()
 db = get_db_conn()

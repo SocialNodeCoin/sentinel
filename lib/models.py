@@ -11,7 +11,7 @@ from peewee import IntegerField, CharField, TextField, ForeignKeyField, DecimalF
 import peewee
 import playhouse.signals
 import misc
-import allgamescoind
+import decentralwayd
 from misc import (printdbg, is_numeric)
 import config
 from bitcoinrpc.authproxy import JSONRPCException
@@ -28,7 +28,7 @@ db.connect()
 
 
 # TODO: lookup table?
-ALLGAMESCOIND_GOVOBJ_TYPES = {
+decentralwayd_GOVOBJ_TYPES = {
     'proposal': 1,
     'superblock': 2,
 }
@@ -74,10 +74,10 @@ class GovernanceObject(BaseModel):
     class Meta:
         db_table = 'governance_objects'
 
-    # sync allgamescoind gobject list with our local relational DB backend
+    # sync decentralwayd gobject list with our local relational DB backend
     @classmethod
-    def sync(self, allgamescoind):
-        golist = allgamescoind.rpc_command('gobject', 'list')
+    def sync(self, decentralwayd):
+        golist = decentralwayd.rpc_command('gobject', 'list')
 
         # objects which are removed from the network should be removed from the DB
         try:
@@ -89,7 +89,7 @@ class GovernanceObject(BaseModel):
 
         for item in golist.values():
             try:
-                (go, subobj) = self.import_gobject_from_allgamescoind(allgamescoind, item)
+                (go, subobj) = self.import_gobject_from_decentralwayd(decentralwayd, item)
             except Exception as e:
                 printdbg("Got an error upon import: %s" % e)
 
@@ -101,9 +101,9 @@ class GovernanceObject(BaseModel):
         return query
 
     @classmethod
-    def import_gobject_from_allgamescoind(self, allgamescoind, rec):
+    def import_gobject_from_decentralwayd(self, decentralwayd, rec):
         import decimal
-        import allgamescoinlib
+        import decentralwaylib
         import binascii
         import gobject_json
 
@@ -133,11 +133,11 @@ class GovernanceObject(BaseModel):
         # set object_type in govobj table
         gobj_dict['object_type'] = subclass.govobj_type
 
-        # exclude any invalid model data from allgamescoind...
+        # exclude any invalid model data from decentralwayd...
         valid_keys = subclass.serialisable_fields()
         subdikt = {k: dikt[k] for k in valid_keys if k in dikt}
 
-        # get/create, then sync vote counts from allgamescoind, with every run
+        # get/create, then sync vote counts from decentralwayd, with every run
         govobj, created = self.get_or_create(object_hash=object_hash, defaults=gobj_dict)
         if created:
             printdbg("govobj created = %s" % created)
@@ -146,19 +146,19 @@ class GovernanceObject(BaseModel):
             printdbg("govobj updated = %d" % count)
         subdikt['governance_object'] = govobj
 
-        # get/create, then sync payment amounts, etc. from allgamescoind - AllGamesCoind is the master
+        # get/create, then sync payment amounts, etc. from decentralwayd - decentralwayd is the master
         try:
             newdikt = subdikt.copy()
             newdikt['object_hash'] = object_hash
             if subclass(**newdikt).is_valid() is False:
-                govobj.vote_delete(allgamescoind)
+                govobj.vote_delete(decentralwayd)
                 return (govobj, None)
 
             subobj, created = subclass.get_or_create(object_hash=object_hash, defaults=subdikt)
         except Exception as e:
             # in this case, vote as delete, and log the vote in the DB
-            printdbg("Got invalid object from allgamescoind! %s" % e)
-            govobj.vote_delete(allgamescoind)
+            printdbg("Got invalid object from decentralwayd! %s" % e)
+            govobj.vote_delete(decentralwayd)
             return (govobj, None)
 
         if created:
@@ -170,9 +170,9 @@ class GovernanceObject(BaseModel):
         # ATM, returns a tuple w/gov attributes and the govobj
         return (govobj, subobj)
 
-    def vote_delete(self, allgamescoind):
+    def vote_delete(self, decentralwayd):
         if not self.voted_on(signal=VoteSignals.delete, outcome=VoteOutcomes.yes):
-            self.vote(allgamescoind, VoteSignals.delete, VoteOutcomes.yes)
+            self.vote(decentralwayd, VoteSignals.delete, VoteOutcomes.yes)
         return
 
     def get_vote_command(self, signal, outcome):
@@ -180,8 +180,8 @@ class GovernanceObject(BaseModel):
                signal.name, outcome.name]
         return cmd
 
-    def vote(self, allgamescoind, signal, outcome):
-        import allgamescoinlib
+    def vote(self, decentralwayd, signal, outcome):
+        import decentralwaylib
 
         # At this point, will probably never reach here. But doesn't hurt to
         # have an extra check just in case objects get out of sync (people will
@@ -211,10 +211,10 @@ class GovernanceObject(BaseModel):
 
         vote_command = self.get_vote_command(signal, outcome)
         printdbg(' '.join(vote_command))
-        output = allgamescoind.rpc_command(*vote_command)
+        output = decentralwayd.rpc_command(*vote_command)
 
         # extract vote output parsing to external lib
-        voted = allgamescoinlib.did_we_vote(output)
+        voted = decentralwaylib.did_we_vote(output)
 
         if voted:
             printdbg('VOTE success, saving Vote object to database')
@@ -222,11 +222,11 @@ class GovernanceObject(BaseModel):
                  object_hash=self.object_hash).save()
         else:
             printdbg('VOTE failed, trying to sync with network vote')
-            self.sync_network_vote(allgamescoind, signal)
+            self.sync_network_vote(decentralwayd, signal)
 
-    def sync_network_vote(self, allgamescoind, signal):
+    def sync_network_vote(self, decentralwayd, signal):
         printdbg('\tSyncing network vote for object %s with signal %s' % (self.object_hash, signal.name))
-        vote_info = allgamescoind.get_my_gobject_votes(self.object_hash)
+        vote_info = decentralwayd.get_my_gobject_votes(self.object_hash)
         for vdikt in vote_info:
             if vdikt['signal'] != signal.name:
                 continue
@@ -279,13 +279,13 @@ class Proposal(GovernanceClass, BaseModel):
     # src/governance-validators.cpp
     MAX_DATA_SIZE = 512
 
-    govobj_type = ALLGAMESCOIND_GOVOBJ_TYPES['proposal']
+    govobj_type = decentralwayd_GOVOBJ_TYPES['proposal']
 
     class Meta:
         db_table = 'proposals'
 
     def is_valid(self):
-        import allgamescoinlib
+        import decentralwaylib
 
         printdbg("In Proposal#is_valid, for Proposal: %s" % self.__dict__)
 
@@ -315,9 +315,9 @@ class Proposal(GovernanceClass, BaseModel):
                 printdbg("\tProposal amount [%s] is negative or zero, returning False" % self.payment_amount)
                 return False
 
-            # payment address is valid base58 allgamescoin addr, non-multisig
-            if not allgamescoinlib.is_valid_allgamescoin_address(self.payment_address, config.network):
-                printdbg("\tPayment address [%s] not a valid AllGamesCoin address for network [%s], returning False" % (self.payment_address, config.network))
+            # payment address is valid base58 decentralway addr, non-multisig
+            if not decentralwaylib.is_valid_decentralway_address(self.payment_address, config.network):
+                printdbg("\tPayment address [%s] not a valid decentralway address for network [%s], returning False" % (self.payment_address, config.network))
                 return False
 
             # URL
@@ -330,7 +330,7 @@ class Proposal(GovernanceClass, BaseModel):
                 printdbg("\tProposal URL [%s] has whitespace, returning False" % self.name)
                 return False
 
-            # AllGamesCoin Core restricts proposals to 512 bytes max
+            # decentralway Core restricts proposals to 512 bytes max
             if len(self.serialise()) > (self.MAX_DATA_SIZE * 2):
                 printdbg("\tProposal [%s] is too big, returning False" % self.name)
                 return False
@@ -350,7 +350,7 @@ class Proposal(GovernanceClass, BaseModel):
 
     def is_expired(self, superblockcycle=None):
         from constants import SUPERBLOCK_FUDGE_WINDOW
-        import allgamescoinlib
+        import decentralwaylib
 
         if not superblockcycle:
             raise Exception("Required field superblockcycle missing.")
@@ -362,7 +362,7 @@ class Proposal(GovernanceClass, BaseModel):
         # half the SB cycle, converted to seconds
         # add the fudge_window in seconds, defined elsewhere in Sentinel
         expiration_window_seconds = int(
-            (allgamescoinlib.blocks_to_seconds(superblockcycle) / 2) +
+            (decentralwaylib.blocks_to_seconds(superblockcycle) / 2) +
             SUPERBLOCK_FUDGE_WINDOW
         )
         printdbg("\texpiration_window_seconds = %s" % expiration_window_seconds)
@@ -430,14 +430,14 @@ class Superblock(BaseModel, GovernanceClass):
     sb_hash = CharField()
     object_hash = CharField(max_length=64)
 
-    govobj_type = ALLGAMESCOIND_GOVOBJ_TYPES['superblock']
+    govobj_type = decentralwayd_GOVOBJ_TYPES['superblock']
     only_masternode_can_submit = True
 
     class Meta:
         db_table = 'superblocks'
 
     def is_valid(self):
-        import allgamescoinlib
+        import decentralwaylib
         import decimal
 
         printdbg("In Superblock#is_valid, for SB: %s" % self.__dict__)
@@ -445,7 +445,7 @@ class Superblock(BaseModel, GovernanceClass):
         # it's a string from the DB...
         addresses = self.payment_addresses.split('|')
         for addr in addresses:
-            if not allgamescoinlib.is_valid_allgamescoin_address(addr, config.network):
+            if not decentralwaylib.is_valid_decentralway_address(addr, config.network):
                 printdbg("\tInvalid address [%s], returning False" % addr)
                 return False
 
@@ -478,8 +478,8 @@ class Superblock(BaseModel, GovernanceClass):
         return True
 
     def hash(self):
-        import allgamescoinlib
-        return allgamescoinlib.hashit(self.serialise())
+        import decentralwaylib
+        return decentralwaylib.hashit(self.serialise())
 
     def hex_hash(self):
         return "%x" % self.hash()

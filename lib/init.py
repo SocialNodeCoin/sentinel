@@ -56,23 +56,23 @@ def is_database_correctly_configured():
     return configured
 
 
-def has_allgamescoin_conf():
+def has_decentralway_conf():
     import config
     import io
 
-    valid_allgamescoin_conf = False
+    valid_decentralway_conf = False
 
-    # ensure allgamescoin_conf exists & readable
+    # ensure decentralway_conf exists & readable
     #
-    # if not, print a message stating that AllGamesCoin Core must be installed and
-    # configured, including JSONRPC access in allgamescoin.conf
+    # if not, print a message stating that decentralway Core must be installed and
+    # configured, including JSONRPC access in decentralway.conf
     try:
-        f = io.open(config.allgamescoin_conf)
-        valid_allgamescoin_conf = True
+        f = io.open(config.decentralway_conf)
+        valid_decentralway_conf = True
     except IOError as e:
         print(e)
 
-    return valid_allgamescoin_conf
+    return valid_decentralway_conf
 
 
 # === begin main
@@ -94,8 +94,8 @@ def main():
         print("Please ensure correct database configuration.")
         sys.exit(1)
 
-    if not has_allgamescoin_conf():
-        print("AllGamesCoinCore must be installed and configured, including JSONRPC access in allgamescoin.conf")
+    if not has_decentralway_conf():
+        print("decentralwayCore must be installed and configured, including JSONRPC access in decentralway.conf")
         sys.exit(1)
 
 
