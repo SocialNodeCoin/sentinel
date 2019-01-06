@@ -5,7 +5,7 @@ sys.path.append(os.path.normpath(os.path.join(os.path.dirname(__file__), '../lib
 import init
 import config
 import misc
-from allgamescoind import AllGamesCoinDaemon
+from decentralwayd import decentralwaydaemon
 from models import Superblock, Proposal, GovernanceObject
 from models import VoteSignals, VoteOutcomes, Transient
 import socket
@@ -19,30 +19,30 @@ from scheduler import Scheduler
 import argparse
 
 
-# sync allgamescoind gobject list with our local relational DB backend
-def perform_allgamescoind_object_sync(allgamescoind):
-    GovernanceObject.sync(allgamescoind)
+# sync decentralwayd gobject list with our local relational DB backend
+def perform_decentralwayd_object_sync(decentralwayd):
+    GovernanceObject.sync(decentralwayd)
 
 
-def prune_expired_proposals(allgamescoind):
+def prune_expired_proposals(decentralwayd):
     # vote delete for old proposals
-    for proposal in Proposal.expired(allgamescoind.superblockcycle()):
-        proposal.vote(allgamescoind, VoteSignals.delete, VoteOutcomes.yes)
+    for proposal in Proposal.expired(decentralwayd.superblockcycle()):
+        proposal.vote(decentralwayd, VoteSignals.delete, VoteOutcomes.yes)
 
 
-# ping allgamescoind
-def sentinel_ping(allgamescoind):
+# ping decentralwayd
+def sentinel_ping(decentralwayd):
     printdbg("in sentinel_ping")
 
-    allgamescoind.ping()
+    decentralwayd.ping()
 
     printdbg("leaving sentinel_ping")
 
 
-def attempt_superblock_creation(allgamescoind):
-    import allgamescoinlib
+def attempt_superblock_creation(decentralwayd):
+    import decentralwaylib
 
-    if not allgamescoind.is_masternode():
+    if not decentralwayd.is_masternode():
         print("We are not a Masternode... can't submit superblocks!")
         return
 
@@ -53,7 +53,7 @@ def attempt_superblock_creation(allgamescoind):
     # has this masternode voted on *any* superblocks at the given event_block_height?
     # have we voted FUNDING=YES for a superblock for this specific event_block_height?
 
-    event_block_height = allgamescoind.next_superblock_height()
+    event_block_height = decentralwayd.next_superblock_height()
 
     if Superblock.is_voted_funding(event_block_height):
         # printdbg("ALREADY VOTED! 'til next time!")
@@ -61,21 +61,21 @@ def attempt_superblock_creation(allgamescoind):
         # vote down any new SBs because we've already chosen a winner
         for sb in Superblock.at_height(event_block_height):
             if not sb.voted_on(signal=VoteSignals.funding):
-                sb.vote(allgamescoind, VoteSignals.funding, VoteOutcomes.no)
+                sb.vote(decentralwayd, VoteSignals.funding, VoteOutcomes.no)
 
         # now return, we're done
         return
 
-    if not allgamescoind.is_govobj_maturity_phase():
+    if not decentralwayd.is_govobj_maturity_phase():
         printdbg("Not in maturity phase yet -- will not attempt Superblock")
         return
 
-    proposals = Proposal.approved_and_ranked(proposal_quorum=allgamescoind.governance_quorum(), next_superblock_max_budget=allgamescoind.next_superblock_max_budget())
-    budget_max = allgamescoind.get_superblock_budget_allocation(event_block_height)
-    sb_epoch_time = allgamescoind.block_height_to_epoch(event_block_height)
+    proposals = Proposal.approved_and_ranked(proposal_quorum=decentralwayd.governance_quorum(), next_superblock_max_budget=decentralwayd.next_superblock_max_budget())
+    budget_max = decentralwayd.get_superblock_budget_allocation(event_block_height)
+    sb_epoch_time = decentralwayd.block_height_to_epoch(event_block_height)
 
-    maxgovobjdatasize = allgamescoind.govinfo['maxgovobjdatasize']
-    sb = allgamescoinlib.create_superblock(proposals, event_block_height, budget_max, sb_epoch_time, maxgovobjdatasize)
+    maxgovobjdatasize = decentralwayd.govinfo['maxgovobjdatasize']
+    sb = decentralwaylib.create_superblock(proposals, event_block_height, budget_max, sb_epoch_time, maxgovobjdatasize)
     if not sb:
         printdbg("No superblock created, sorry. Returning.")
         return
@@ -83,12 +83,12 @@ def attempt_superblock_creation(allgamescoind):
     # find the deterministic SB w/highest object_hash in the DB
     dbrec = Superblock.find_highest_deterministic(sb.hex_hash())
     if dbrec:
-        dbrec.vote(allgamescoind, VoteSignals.funding, VoteOutcomes.yes)
+        dbrec.vote(decentralwayd, VoteSignals.funding, VoteOutcomes.yes)
 
         # any other blocks which match the sb_hash are duplicates, delete them
         for sb in Superblock.select().where(Superblock.sb_hash == sb.hex_hash()):
             if not sb.voted_on(signal=VoteSignals.funding):
-                sb.vote(allgamescoind, VoteSignals.delete, VoteOutcomes.yes)
+                sb.vote(decentralwayd, VoteSignals.delete, VoteOutcomes.yes)
 
         printdbg("VOTED FUNDING FOR SB! We're done here 'til next superblock cycle.")
         return
@@ -96,24 +96,24 @@ def attempt_superblock_creation(allgamescoind):
         printdbg("The correct superblock wasn't found on the network...")
 
     # if we are the elected masternode...
-    if (allgamescoind.we_are_the_winner()):
+    if (decentralwayd.we_are_the_winner()):
         printdbg("we are the winner! Submit SB to network")
-        sb.submit(allgamescoind)
+        sb.submit(decentralwayd)
 
 
-def check_object_validity(allgamescoind):
+def check_object_validity(decentralwayd):
     # vote (in)valid objects
     for gov_class in [Proposal, Superblock]:
         for obj in gov_class.select():
-            obj.vote_validity(allgamescoind)
+            obj.vote_validity(decentralwayd)
 
 
-def is_allgamescoind_port_open(allgamescoind):
+def is_decentralwayd_port_open(decentralwayd):
     # test socket open before beginning, display instructive message to MN
     # operators if it's not
     port_open = False
     try:
-        info = allgamescoind.rpc_command('getgovernanceinfo')
+        info = decentralwayd.rpc_command('getgovernanceinfo')
         port_open = True
     except (socket.error, JSONRPCException) as e:
         print("%s" % e)
@@ -122,21 +122,21 @@ def is_allgamescoind_port_open(allgamescoind):
 
 
 def main():
-    allgamescoind = AllGamesCoinDaemon.from_allgamescoin_conf(config.allgamescoin_conf)
+    decentralwayd = decentralwaydaemon.from_decentralway_conf(config.decentralway_conf)
     options = process_args()
 
-    # check allgamescoind connectivity
-    if not is_allgamescoind_port_open(allgamescoind):
-        print("Cannot connect to allgamescoind. Please ensure allgamescoind is running and the JSONRPC port is open to Sentinel.")
+    # check decentralwayd connectivity
+    if not is_decentralwayd_port_open(decentralwayd):
+        print("Cannot connect to decentralwayd. Please ensure decentralwayd is running and the JSONRPC port is open to Sentinel.")
         return
 
-    # check allgamescoind sync
-    if not allgamescoind.is_synced():
-        print("allgamescoind not synced with network! Awaiting full sync before running Sentinel.")
+    # check decentralwayd sync
+    if not decentralwayd.is_synced():
+        print("decentralwayd not synced with network! Awaiting full sync before running Sentinel.")
         return
 
     # ensure valid masternode
-    if not allgamescoind.is_masternode():
+    if not decentralwayd.is_masternode():
         print("Invalid Masternode Status, cannot continue.")
         return
 
@@ -168,19 +168,19 @@ def main():
     # ========================================================================
     #
     # load "gobject list" rpc command data, sync objects into internal database
-    perform_allgamescoind_object_sync(allgamescoind)
+    perform_decentralwayd_object_sync(decentralwayd)
 
-    if allgamescoind.has_sentinel_ping:
-        sentinel_ping(allgamescoind)
+    if decentralwayd.has_sentinel_ping:
+        sentinel_ping(decentralwayd)
 
     # auto vote network objects as valid/invalid
-    # check_object_validity(allgamescoind)
+    # check_object_validity(decentralwayd)
 
     # vote to delete expired proposals
-    prune_expired_proposals(allgamescoind)
+    prune_expired_proposals(decentralwayd)
 
     # create a Superblock if necessary
-    attempt_superblock_creation(allgamescoind)
+    attempt_superblock_creation(decentralwayd)
 
     # schedule the next run
     Scheduler.schedule_next_run()

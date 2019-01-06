@@ -9,17 +9,17 @@ import config
 from models import Superblock, Proposal, GovernanceObject, Setting, Signal, Vote, Outcome
 from models import VoteSignals, VoteOutcomes
 from peewee import PeeweeException  # , OperationalError, IntegrityError
-from allgamescoind import AllGamesCoinDaemon
-import allgamescoinlib
+from decentralwayd import decentralwaydaemon
+import decentralwaylib
 from decimal import Decimal
-allgamescoind = AllGamesCoinDaemon.from_allgamescoin_conf(config.allgamescoin_conf)
+decentralwayd = decentralwaydaemon.from_decentralway_conf(config.decentralway_conf)
 import misc
 # ==============================================================================
 # do stuff here
 
 pr = Proposal(
     name='proposal7',
-    url='https://allgamescoincentral.com/proposal7',
+    url='https://decentralwaycentral.com/proposal7',
     payment_address='yTC62huR4YQEPn9AJHjnQxxreHSbgAoatV',
     payment_amount=39.23,
     start_epoch=1483250400,
@@ -33,13 +33,13 @@ pr = Proposal(
 # )
 
 
-# TODO: make this a test, mock 'allgamescoind' and tie a test block height to a
+# TODO: make this a test, mock 'decentralwayd' and tie a test block height to a
 # timestamp, ensure only unit testing a within_window method
 #
 # also, create the `within_window` or similar method & use that.
 #
 bh = 131112
-bh_epoch = allgamescoind.block_height_to_epoch(bh)
+bh_epoch = decentralwayd.block_height_to_epoch(bh)
 
 fudge = 72000
 window_start = 1483689082 - fudge
@@ -56,7 +56,7 @@ else:
     print("Within window, we're good!")
 
 # pdb.set_trace()
-# allgamescoind.get_object_list()
+# decentralwayd.get_object_list()
 # ==============================================================================
 # pdb.set_trace()
 1
